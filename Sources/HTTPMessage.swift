@@ -13,6 +13,8 @@ public class HTTPMessage {
     public var request: String?
     /// HTTP response
     public var response: String?
+    /// Response code (non-nil if a response)
+    public var responseCode: Int?
     /// Method used, such as "GET", "PUT", etc
     public var method: String?
     /// Version of HTTP used, e.g. `HTTP/1.1`
@@ -67,8 +69,9 @@ public class HTTPMessage {
     /// Create an empty HTTP message
     ///
     /// - Parameter httpVersion: HTTP version to use, e.g. "HTTP/1.1"
-    public init(httpVersion: String = defaultHTTPVersion) {
+    public init(isResponse: Bool = false, httpVersion: String = defaultHTTPVersion) {
         self.httpVersion = httpVersion
+        if isResponse { responseCode = 0 }
     }
 
     /// Set the value of a given HTTP header

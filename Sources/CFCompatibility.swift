@@ -30,8 +30,7 @@ public func CFHTTPMessageCreateRequest(_ allocator: CFAllocator?, _ method: CFSt
 ///   - isRequest: Boolean indicating whether this should be a HTTP request
 /// - Returns: an empty HTTP message
 public func CFHTTPMessageCreateEmpty(_ allocator: CFAllocator?, _ isRequest: Bool) -> CFHTTPMessage {
-    guard isRequest else { return CFHTTPMessage(response: 0) }
-    return CFHTTPMessage(request: "", url: URL(fileURLWithPath: ""))
+    return CFHTTPMessage(isResponse: !isRequest)
 }
 
 /// Return whether the given HTTP message is a request
@@ -39,7 +38,7 @@ public func CFHTTPMessageCreateEmpty(_ allocator: CFAllocator?, _ isRequest: Boo
 /// - Parameter message: HTTP message to check
 /// - Returns: `true` if this is a HTTP request
 public func CFHTTPMessageIsRequest(_ message: CFHTTPMessage) -> Bool {
-    return message.request != nil
+    return message.responseCode == nil
 }
 
 /// Return whether the headers are complete for the given HTTP message
