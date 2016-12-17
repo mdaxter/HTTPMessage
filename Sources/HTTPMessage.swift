@@ -45,11 +45,11 @@ public class HTTPMessage {
     ///   - request: The HTTP request method to use, such as `PUT`, `GET`
     ///   - url: URL associated with the request
     ///   - httpVersion: HTTP version to use, e.g. "HTTP/1.1"
-    public init(request: String, url: URL? = nil, httpVersion: String = defaultHTTPVersion) {
-        self.method = request
+    public convenience init(request: String, url: URL? = nil, httpVersion v: String = defaultHTTPVersion) {
+        self.init(httpVersion: v)
+        method = request
         self.url = url
-        self.httpVersion = httpVersion
-        self.request = "\(request) \(url?.path ?? "/") \(httpVersion)"
+        self.request = "\(request) \(url?.path ?? "/") \(v)"
     }
 
     /// Create a HTTP response message
@@ -58,10 +58,17 @@ public class HTTPMessage {
     ///   - code: response code, e.g. `200`
     ///   - status: status message or `nil` for default
     ///   - httpVersion: HTTP version to use, e.g. "HTTP/1.1"
-    public init(response code: Int, status: String? = nil, httpVersion: String = defaultHTTPVersion) {
+    public convenience init(response code: Int, status: String? = nil, httpVersion v: String = defaultHTTPVersion) {
+        self.init(httpVersion: v)
         let status = status ?? statusMessage(for: code)
+        response = "\(v) \(code) \(status)"
+    }
+
+    /// Create an empty HTTP message
+    ///
+    /// - Parameter httpVersion: HTTP version to use, e.g. "HTTP/1.1"
+    public init(httpVersion: String = defaultHTTPVersion) {
         self.httpVersion = httpVersion
-        response = "\(httpVersion) \(code) \(status)"
     }
 
     /// Set the value of a given HTTP header
@@ -78,5 +85,16 @@ public class HTTPMessage {
         headers[key] = value
         if let i = headerKeys.index(of: key) { headerKeys[i] = key }
         else { headerKeys.append(key) }
+    }
+
+    /// Append data to the body
+    ///
+    /// - Parameter data: the data to append
+    public func append(_ data: Data) {
+        if body != nil { body!.append(data) }
+        else { body = data }
+        if !headersComplete {
+
+        }
     }
 }
