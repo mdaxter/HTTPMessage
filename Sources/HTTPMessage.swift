@@ -26,6 +26,12 @@ public class HTTPMessage {
     /// Return whether the headers are complete
     public var headersComplete = false
 
+    /// Return true if this is a response
+    public var isResponse: Bool { return responseCode != nil }
+
+    /// Return true if this is a request
+    public var isRequest: Bool { return responseCode == nil }
+
     /// Header content as a string
     public var header: String {
         return headerKeys.reduce("") { $0 + "\($1): \(headers[$1]!)\r\n" }
@@ -97,7 +103,7 @@ public class HTTPMessage {
         if body != nil { body!.append(data) }
         else { body = data }
         if !headersComplete {
-
+            
         }
     }
 }
