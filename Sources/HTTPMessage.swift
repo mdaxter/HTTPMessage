@@ -239,46 +239,47 @@ public class HTTPMessage {
     public func append(_ data: Data) -> Bool {
         if body != nil { body!.append(data) }
         else { body = data }
-        if !headersComplete {   // need to check if complete and parse headers
-            if isResponse {
-                if response == nil {
-                    if let status = getResponseStatus() {
-                        if let version = status.http {
-                            httpVersion = version
+        if headersComplete { return true}
+
+        // need to check if complete and parse headers
+        if isResponse {
+            if response == nil {
+                if let status = getResponseStatus() {
+                    if let version = status.http {
+                        httpVersion = version
+                    }
+                    if let code = status.code {
+                        responseCode = code
+                    }
+                    response = status.line
+                    if status.complete {
+                        guard responseCode != nil && responseCode != 0 && response != nil else {
+                            return false
                         }
-                        if let code = status.code {
-                            responseCode = code
-                        }
-                        response = status.line
-                        if status.complete {
-                            guard responseCode != nil && responseCode != 0 && response != nil else {
-                                return false
-                            }
-                        } else {
-                            return true // first line not complete yet
-                        }
+                    } else {
+                        return true // first line not complete yet
                     }
                 }
-            } else {
-                if request == nil {
-                    if let status = getFirstLineOfRequest() {
-                        if let version = status.http {
-                            httpVersion = version
+            }
+        } else {
+            if request == nil {
+                if let status = getFirstLineOfRequest() {
+                    if let version = status.http {
+                        httpVersion = version
+                    }
+                    if let requestMethod = status.request {
+                        method = requestMethod
+                    }
+                    if let urlString = status.url,
+                        let uri = URL(string: urlString) {
+                        url = uri
+                    }
+                    if status.complete {
+                        guard method != nil && url != nil && httpVersion.hasPrefix("HTTP/") else {
+                            return false
                         }
-                        if let requestMethod = status.request {
-                            method = requestMethod
-                        }
-                        if let urlString = status.url,
-                            let uri = URL(string: urlString) {
-                            url = uri
-                        }
-                        if status.complete {
-                            guard method != nil && url != nil && httpVersion.hasPrefix("HTTP/") else {
-                                return false
-                            }
-                        } else {
-                            return true // first line not complete yet
-                        }
+                    } else {
+                        return true // first line not complete yet
                     }
                 }
             }
