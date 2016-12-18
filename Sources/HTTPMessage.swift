@@ -78,9 +78,8 @@ public class HTTPMessage {
 
     /// Message header and body serialised as Data
     public var messageData: Data? {
-        guard let body = body,
-              let headerData = (header + "\r\n").data(using: .utf8) else { return nil }
-        return headerData + body
+        guard let headerData = (header + "\r\n").data(using: .utf8) else { return nil }
+        return body == nil ? headerData : (headerData + body!)
     }
 
     /// Header that needs completion
@@ -239,7 +238,7 @@ public class HTTPMessage {
     public func append(_ data: Data) -> Bool {
         if body != nil { body!.append(data) }
         else { body = data }
-        if headersComplete { return true}
+        if headersComplete { return true }
 
         // need to check if complete and parse headers
         if isResponse {
