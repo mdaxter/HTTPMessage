@@ -71,7 +71,7 @@ public class HTTPMessage {
     /// Header content as a string
     public var header: String? {
         guard let firstLine = response ?? request else { return nil }
-        return headerKeys.reduce(firstLine + "\r\n") { $0 + "\($1): \(headers[$1]!)\r\n" }
+        return headerKeys.reduce(firstLine + "\r\n") { $0 + "\($1): \(headers[$1]!)\r\n" } + "\r\n"
     }
 
     /// Header content serialised as Data
