@@ -69,16 +69,17 @@ public class HTTPMessage {
     public var isRequest: Bool { return responseCode == nil }
 
     /// Header content as a string
-    public var header: String {
-        return headerKeys.reduce("") { $0 + "\($1): \(headers[$1]!)\r\n" }
+    public var header: String? {
+        guard let firstLine = response ?? request else { return nil }
+        return headerKeys.reduce(firstLine + "\r\n") { $0 + "\($1): \(headers[$1]!)\r\n" }
     }
 
     /// Header content serialised as Data
-    public var headerData: Data? { return header.data(using: .utf8) }
+    public var headerData: Data? { return header?.data(using: .utf8) }
 
     /// Message header and body serialised as Data
     public var messageData: Data? {
-        guard let headerData = (header + "\r\n").data(using: .utf8) else { return nil }
+        guard let headerData = header?.data(using: .utf8) else { return nil }
         return body == nil ? headerData : (headerData + body!)
     }
 
