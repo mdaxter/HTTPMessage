@@ -47,6 +47,127 @@ public class HTTPMessage {
         return headerData + body
     }
 
+    /// Parsed response status line
+    func getResponseStatus() -> (complete: Bool, http: String?, code: Int?, line: String)? {
+        let status: String
+        var lineComplete = false
+        if let responseLine = response {
+            status = responseLine
+            lineComplete = true
+        } else {
+            guard let header = body else { return nil }
+            var eolIndex: Data.Index?
+            let lfIndex = header.index(of: 10)
+            let crIndex = header.index(of: 13)
+            if let cr = crIndex { eolIndex = cr }
+            else if let lf = lfIndex { eolIndex = lf }
+            if let eol = eolIndex {
+                let bodyIndex: Data.Index
+                let headerIndex: Data.Index
+                if let cr = crIndex, let lf = lfIndex, abs(lf-cr) == 1 {
+                    headerIndex = min(cr, lf)
+                    bodyIndex = max(cr, lf)
+                } else {
+                    headerIndex = eol
+                    bodyIndex = eol
+                }
+                response = String(data: Data(header.prefix(upTo: headerIndex)), encoding: .utf8)
+                status = response ?? ""
+                body = Data(header.suffix(bodyIndex))
+                lineComplete = true
+            } else {
+                guard let string = String(data: header, encoding: .utf8) else {
+                    if header.isEmpty { return nil }
+                    return (complete: true, http: nil, code: nil, line: "")
+                }
+                status = string
+            }
+        }
+        let space = UTF16.CodeUnit(32)
+        let u16 = status.utf16
+        let utfields = u16.split(separator: space, omittingEmptySubsequences: true)
+        if utfields.count < 3 {
+            guard lineComplete else { return nil }
+            return (complete: true, http: nil, code: nil, line: "")
+        }
+        let httpField = utfields[0]
+        let httpVersion: String?
+        var numericalCode: Int?
+        if u16.count >= 8 {
+            httpVersion = String(describing: httpField)
+            if !httpVersion!.hasPrefix("HTTP/") { lineComplete = true }
+            if utfields.count > 1 {
+                numericalCode = Int(String(describing: utfields[1]))
+                lineComplete = true
+            }
+        } else {
+            httpVersion = nil
+        }
+        return (complete: lineComplete,
+                http: httpVersion,
+                code: numericalCode,
+                line: status)
+    }
+
+    
+    /// Parsed request status line
+    func getRequestStatus() -> (complete: Bool, http: String?, request: String?, url: String?, line: String)? {
+        let status: String
+        var lineComplete = false
+        if let requestLine = request {
+            status = requestLine
+            lineComplete = true
+        } else {
+            guard let header = body else { return nil }
+            var eolIndex: Data.Index?
+            let lfIndex = header.index(of: 10)
+            let crIndex = header.index(of: 13)
+            if let cr = crIndex { eolIndex = cr }
+            else if let lf = lfIndex { eolIndex = lf }
+            if let eol = eolIndex {
+                let bodyIndex: Data.Index
+                let headerIndex: Data.Index
+                if let cr = crIndex, let lf = lfIndex, abs(lf-cr) == 1 {
+                    headerIndex = min(cr, lf)
+                    bodyIndex = max(cr, lf)
+                } else {
+                    headerIndex = eol
+                    bodyIndex = eol
+                }
+                request = String(data: Data(header.prefix(upTo: headerIndex)), encoding: .utf8)
+                status = request ?? ""
+                body = Data(header.suffix(bodyIndex))
+                lineComplete = true
+            } else {
+                guard let string = String(data: header, encoding: .utf8) else {
+                    if header.isEmpty { return nil }
+                    return (complete: true, http: nil, request: nil, url: nil, line: "")
+                }
+                status = string
+            }
+        }
+        let space = UTF16.CodeUnit(32)
+        let u16 = status.utf16
+        let utfields = u16.split(separator: space, omittingEmptySubsequences: true)
+        let n = utfields.count
+        if n > 3 { lineComplete = true }
+        if n > 3 || n < 2 {
+            guard lineComplete else { return nil }
+            return (complete: true, http: nil, request: nil, url: nil, line: "")
+        }
+        let requestField = String(describing: utfields[0])
+        let urlField = String(describing: utfields[1])
+        let httpVersion = utfields.count > 2 ? String(describing: utfields[2]) : "HTTP/1.0"
+        if httpVersion.utf16.count >= 8 {
+            if !httpVersion.hasPrefix("HTTP/") { lineComplete = true }
+        }
+        return (complete: lineComplete,
+                http: httpVersion,
+                request: requestField,
+                url: urlField,
+                line: status)
+    }
+    
     /// Create a HTTP request message using a given method
     ///
     /// - Parameters:
@@ -103,7 +224,31 @@ public class HTTPMessage {
         if body != nil { body!.append(data) }
         else { body = data }
         if !headersComplete {
-            
+            if isResponse {
+                if let status = getResponseStatus() {
+                    if let version = status.http {
+                        httpVersion = version
+                    }
+                    if let code = status.code {
+                        responseCode = code
+                    }
+                    headersComplete = status.complete
+                }
+            } else {
+                if let status = getRequestStatus() {
+                    if let version = status.http {
+                        httpVersion = version
+                    }
+                    if let requestMethod = status.request {
+                        method = requestMethod
+                    }
+                    if let urlString = status.url,
+                       let uri = URL(string: urlString) {
+                       url = uri
+                    }
+                    headersComplete = status.complete
+                }
+            }
         }
     }
 }
