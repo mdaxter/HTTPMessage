@@ -12,7 +12,7 @@ let defaultHTTPVersion = "HTTP/1.1"
 /// - Returns: `nil` if not found, else `delimiterIndex` of the eol delimeter, `nextLineIndex` of the beginning of the next line, `crlf` whether there was a CR
 func endOfLine(for data: Data, inRange range: Range<Data.Index>) -> (delimiterIndex: Data.Index, nextLineIndex: Data.Index, crlf: Bool)? {
     var eolIndex: Data.Index?
-    let slice = data.subdata(in: range)
+    let slice = data[range]
     let lfIndex = slice.index(of: 10)
     let crIndex = slice.index(of: 13)
     let hasCR: Bool
@@ -291,7 +291,7 @@ public class HTTPMessage {
             guard let eol = endOfLine(for: body!, inRange: start..<end) else {
                 return true
             }
-            let line = body!.subdata(in: start..<eol.delimiterIndex)
+            let line = body![start..<eol.delimiterIndex]
             guard !line.isEmpty else {
                 headersComplete = true
                 beg = eol.nextLineIndex
@@ -309,7 +309,7 @@ public class HTTPMessage {
                 s = line.startIndex
             } else {
                 guard let colon = line.index(of: UInt8(":".utf16.first!)),
-                    let k = String(data: line.subdata(in: line.startIndex..<colon), encoding: .utf8) else {
+                    let k = String(data: body!.subdata(in: body!.index(body!.startIndex, offsetBy: line.startIndex)..<body!.index(body!.startIndex, offsetBy: colon)), encoding: .utf8) else {
                         headersComplete = true
                         return false
                 }
@@ -329,7 +329,7 @@ public class HTTPMessage {
             if j == e {
                 val = ""
             } else {
-                guard let v = String(data: line.subdata(in: j..<e), encoding: .utf8) else {
+                guard let v = String(data: body!.subdata(in: body!.index(body!.startIndex, offsetBy: j)..<body!.index(body!.startIndex, offsetBy: e)), encoding: .utf8) else {
                     headersComplete = true
                     return false
                 }
