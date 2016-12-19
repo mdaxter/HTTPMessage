@@ -136,7 +136,7 @@ public class HTTPMessage {
                 line: status)
     }
 
-    
+
     /// Parsed request status line
     func getFirstLineOfRequest() -> (complete: Bool, http: String?, request: String?, url: String?, line: String)? {
         let status: String
@@ -182,7 +182,7 @@ public class HTTPMessage {
                 url: urlField,
                 line: status)
     }
-    
+
     /// Create a HTTP request message using a given method
     ///
     /// - Parameters:
@@ -271,7 +271,7 @@ public class HTTPMessage {
                         method = requestMethod
                     }
                     if let urlString = status.url,
-                        let uri = URL(string: urlString) {
+                        let uri = URL(string: urlString, relativeTo: URL(string: "http://localhost/")) {
                         url = uri
                     }
                     if status.complete {
@@ -309,9 +309,9 @@ public class HTTPMessage {
                 s = line.startIndex
             } else {
                 guard let colon = line.index(of: UInt8(":".utf16.first!)),
-                      let k = String(data: line.subdata(in: line.startIndex..<colon), encoding: .utf8) else {
-                    headersComplete = true
-                    return false
+                    let k = String(data: line.subdata(in: line.startIndex..<colon), encoding: .utf8) else {
+                        headersComplete = true
+                        return false
                 }
                 key = k
                 headerKeys.append(key)
